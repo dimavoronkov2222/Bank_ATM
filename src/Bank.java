@@ -1,28 +1,40 @@
-import java.util.ArrayList;
-import java.util.List;
 public class Bank {
-    private List<ATM> atms;
-    public Bank() {
-        this.atms = new ArrayList<>();
+    private ATM[] atms;
+    private int atmCount;
+    public Bank(int maxATMs) {
+        this.atms = new ATM[maxATMs];
+        this.atmCount = 0;
     }
-    public void addATM(ATM atm) {
-        atms.add(atm);
+    public void addATM(int minWithdrawal, int maxNotes) throws ATMException {
+        if (atmCount >= atms.length) {
+            throw new ATMException("Cannot add more ATMs, limit reached.");
+        }
+        atms[atmCount++] = new ATM(minWithdrawal, maxNotes);
+        System.out.println("ATM added successfully.");
     }
-    public int getTotalFunds() {
-        return atms.stream().mapToInt(ATM::getTotalAmount).sum();
+    public void loadMoneyToATM(int atmIndex, int[] cash) throws ATMException {
+        if (atmIndex < 0 || atmIndex >= atmCount) {
+            throw new ATMException("Invalid ATM index.");
+        }
+        atms[atmIndex].loadCash(cash);
     }
     public void displayATMs() {
-        for (int i = 0; i < atms.size(); i++) {
-            System.out.println("ATM #" + (i + 1) + ": " + atms.get(i));
+        if (atmCount == 0) {
+            System.out.println("No ATMs in the network.");
+        } else {
+            for (int i = 0; i < atmCount; i++) {
+                System.out.println("ATM #" + (i + 1) + ":");
+                atms[i].displayStatus();
+            }
         }
+    }
+    public ATM getATM(int index) throws ATMException {
+        if (index < 0 || index >= atmCount) {
+            throw new ATMException("Invalid ATM index.");
+        }
+        return atms[index];
     }
     public int getATMCount() {
-        return atms.size();
-    }
-    public ATM getATM(int index) {
-        if (index < 0 || index >= atms.size()) {
-            throw new IndexOutOfBoundsException("Invalid ATM number.");
-        }
-        return atms.get(index);
+        return atmCount;
     }
 }

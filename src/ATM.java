@@ -1,54 +1,79 @@
-import java.util.Map;
-import java.util.TreeMap;
 public class ATM {
-    private Map<Integer, Integer> banknotes;
-    private int minWithdrawAmount;
-    private int maxBanknotes;
-    public ATM(int minWithdrawAmount, int maxBanknotes) {
-        this.banknotes = new TreeMap<>((a, b) -> b - a);
-        this.minWithdrawAmount = minWithdrawAmount;
-        this.maxBanknotes = maxBanknotes;
+    public int[] denominations = {1, 2, 5, 10, 20, 50, 100, 200, 500};
+    private int[] notes;
+    private int minWithdrawal;
+    private int maxNotes;
+    public ATM(int minWithdrawal, int maxNotes) {
+        this.minWithdrawal = minWithdrawal;
+        this.maxNotes = maxNotes;
+        this.notes = new int[denominations.length];
     }
-    public void loadCash(Map<Integer, Integer> initialCash) {
-        initialCash.forEach((denomination, count) ->
-                banknotes.put(denomination, banknotes.getOrDefault(denomination, 0) + count)
-        );
-    }
-    public void depositCash(Map<Integer, Integer> deposit) {
-        loadCash(deposit);
-    }
-    public Map<Integer, Integer> withdrawCash(int amount) throws ATMException {
-        if (amount < minWithdrawAmount) {
-            throw new InvalidAmountException("Amount is less than the minimum withdrawal limit.");
+    public void loadCash(int[] cash) {
+        for (int i = 0; i < denominations.length; i++) {
+            notes[i] += cash[i];
         }
-        Map<Integer, Integer> result = new TreeMap<>((a, b) -> b - a);
-        int totalNotes = 0;
-        for (Map.Entry<Integer, Integer> entry : banknotes.entrySet()) {
-            int denomination = entry.getKey();
-            int count = entry.getValue();
-            int needed = Math.min(amount / denomination, count);
-            if (needed > 0) {
-                result.put(denomination, needed);
-                amount -= needed * denomination;
-                totalNotes += needed;
+        System.out.println("ATM successfully loaded with cash.");
+    }
+    public int getTotalAmount() {
+        int total = 0;
+        for (int i = 0; i < denominations.length; i++) {
+            total += denominations[i] * notes[i];
+        }
+        return total;
+    }
+    public int[] withdrawCash(int amount) throws ATMException {
+        if (amount < minWithdrawal) {
+            throw new ATMException("Amount is below the minimum withdrawal limit.");
+        }
+        if (amount > getTotalAmount()) {
+            throw new ATMException("Insufficient funds in the ATM.");
+        }
+        return dispenseCash(amount);
+    }
+    private int[] dispenseCash(int amount) throws ATMException {
+        int[] withdrawnNotes = new int[denominations.length];
+        int count = 0;
+        for (int i = denominations.length - 1; i >= 0 && amount > 0; i--) {
+            int noteCount = Math.min(amount / denominations[i], notes[i]);
+            if (noteCount > 0) {
+                withdrawnNotes[i] = noteCount;
+                notes[i] -= noteCount;
+                amount -= noteCount * denominations[i];
+                count += noteCount;
             }
         }
         if (amount > 0) {
-            throw new InsufficientFundsException("Not enough banknotes to fulfill the withdrawal.");
+            throw new ATMException("Cannot dispense exact amount due to insufficient denominations.");
         }
-        if (totalNotes > maxBanknotes) {
-            throw new InvalidAmountException("Withdrawal exceeds maximum banknotes limit.");
+        if (count > maxNotes) {
+            throw new ATMException("Cannot dispense requested amount: exceeds maximum notes per transaction.");
         }
-        result.forEach((denomination, count) ->
-                banknotes.put(denomination, banknotes.get(denomination) - count)
-        );
-        return result;
+        return withdrawnNotes;
     }
-    public int getTotalAmount() {
-        return banknotes.entrySet().stream().mapToInt(e -> e.getKey() * e.getValue()).sum();
+    public void withdrawFromAccount(BankAccount account, int amount) throws ATMException {
+        if (amount < minWithdrawal) {
+            throw new ATMException("Amount is below the minimum withdrawal limit.");
+        }
+        if (amount > getTotalAmount()) {
+            throw new ATMException("Insufficient funds in the ATM.");
+        }
+        if (amount > account.getBalance()) {
+            throw new ATMException("Insufficient funds in the account.");
+        }
+        int[] withdrawnNotes = dispenseCash(amount);
+        account.withdraw(amount);
+        System.out.println("Successfully withdrew:");
+        for (int i = 0; i < denominations.length; i++) {
+            if (withdrawnNotes[i] > 0) {
+                System.out.println(denominations[i] + " UAH: " + withdrawnNotes[i] + " notes");
+            }
+        }
     }
-    @Override
-    public String toString() {
-        return "ATM { Total Amount: " + getTotalAmount() + ", Banknotes: " + banknotes + " }";
+    public void displayStatus() {
+        System.out.println("ATM Status:");
+        for (int i = 0; i < denominations.length; i++) {
+            System.out.println(denominations[i] + " UAH: " + notes[i] + " notes");
+        }
+        System.out.println("Total amount: " + getTotalAmount());
     }
 }
