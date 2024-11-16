@@ -16,4 +16,13 @@ public class Bank {
             System.out.println("ATM #" + (i + 1) + ": " + atms.get(i));
         }
     }
+    public int getATMCount() {
+        return atms.size();
+    }
+    public ATM getATM(int index) {
+        if (index < 0 || index >= atms.size()) {
+            throw new IndexOutOfBoundsException("Invalid ATM number.");
+        }
+        return atms.get(index);
+    }
 }
